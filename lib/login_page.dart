@@ -1,66 +1,103 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:n_cloud_vault/home.dart';
-import 'nav_bar.dart';
+import 'package:provider/provider.dart';
+import 'home.dart';
 import 'signup.dart';
+import 'providers/auth_provider.dart';
+
 class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
+
 class _LoginPageState extends State<LoginPage> {
-  @override
-  void initState() {
-    super.initState();
-    // startTypingAnimation();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _handleLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.login(
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (success) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed. Please check your credentials.')),
+      );
+    }
   }
-  String title = "NCloud Vault";
-  String final_text = "NCloud Vault";
-  int count = 0;
+
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
-      appBar: NavBar(),
-      drawer: CustomDrawer(currentPage: 'login'),
-      body: Container(
-        child: Padding(
-            padding: EdgeInsets.all(16.0),
-        child : Column(
-          children: [
-            SizedBox(height: 20,),
-            Text(title),
-            SizedBox(height: 20,),
-            TextField(
-              decoration: InputDecoration(labelText: "Username",border: OutlineInputBorder(),),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              decoration: InputDecoration(labelText: "Password",border: OutlineInputBorder(),),
-              obscureText: true,
-            ),
-            SizedBox(height: 20,),
-            Row(
-              mainAxisAlignment: .spaceEvenly,
-              children: [
-                ElevatedButton(onPressed: () {Navigator.push(context,MaterialPageRoute(builder: (context) => Home()));}, child: Text("Login")),
-                ElevatedButton(onPressed: (){Navigator.push(context,MaterialPageRoute(builder: (context) => Signup()));}, child: Text("Signup")),
-              ],
-            ),
-          ],
-        )
-        )
+      body: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(Icons.lock_person, size: 80, color: Colors.indigo),
+              SizedBox(height: 32),
+              Text(
+                'Welcome Back',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Sign in to continue',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              SizedBox(height: 40),
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  prefixIcon: Icon(Icons.password_outlined),
+                ),
+                obscureText: true,
+              ),
+              SizedBox(height: 32),
+              if (authProvider.isLoading)
+                Center(child: CircularProgressIndicator())
+              else
+                ElevatedButton(
+                  onPressed: _handleLogin,
+                  child: Text('Login', style: TextStyle(fontSize: 16)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Signup()));
+                },
+                child: Text("Don't have an account? Sign Up"),
+              ),
+            ],
+          ),
+        ),
       ),
     );
-  }
-  void startTypingAnimation(){
-    Timer.periodic(Duration(milliseconds: 500), (timer) {
-      setState(() {
-        title += final_text.substring(count,count+1);
-        count += 1;
-        if (count == final_text.length){
-          count = 0;
-          title = "";
-        }
-      });
-    });
   }
 }

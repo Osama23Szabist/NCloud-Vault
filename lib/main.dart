@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'login_page.dart';
+import 'home.dart';
+import 'providers/auth_provider.dart';
+import 'providers/password_provider.dart';
 import 'dart:async';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => PasswordProvider()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -12,7 +24,28 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NCloudVault',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.light,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.grey[50],
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
       home: SplashScreen(),
     );
   }
@@ -29,24 +62,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Fade in
     Timer(Duration(milliseconds: 500), () {
-      setState(() {
-        _opacity = 1.0;
-      });
+      if (mounted) setState(() => _opacity = 1.0);
     });
 
-    // Fade out after a delay
     Timer(Duration(seconds: 3), () {
-      setState(() {
-        _opacity = 0.0;
-      });
-    });
-
-    // Navigate to LoginPage after fade out
-    Timer(Duration(seconds: 3 + 1), () {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => LoginPage()),
+        MaterialPageRoute(
+          builder: (context) => authProvider.isAuthenticated ? Home() : LoginPage(),
+        ),
       );
     });
   }
@@ -54,14 +79,38 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: AnimatedOpacity(
-          opacity: _opacity,
-          duration: Duration(milliseconds: 500),
-          child: Text(
-            'NCloud Vault\nBy Osama',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.indigo, Colors.blueAccent],
+          ),
+        ),
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: _opacity,
+            duration: Duration(milliseconds: 1000),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, size: 80, color: Colors.white),
+                SizedBox(height: 24),
+                Text(
+                  'NCloud Vault',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                Text(
+                  'Secure your digital life',
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+              ],
+            ),
           ),
         ),
       ),

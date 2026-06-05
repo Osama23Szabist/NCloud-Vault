@@ -1,59 +1,128 @@
 import 'package:flutter/material.dart';
-import 'nav_bar.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/password_provider.dart';
+import 'models/password_model.dart';
 
-class MakePassword extends StatefulWidget{
+class MakePassword extends StatefulWidget {
   @override
   State<MakePassword> createState() => _MakePasswordState();
 }
-class _MakePasswordState extends State<MakePassword>{
-  String password = "";
-  late TextEditingController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: password); // prefill here
+
+class _MakePasswordState extends State<MakePassword> {
+  final _nameController = TextEditingController();
+  final _descController = TextEditingController();
+  final _urlController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _generatePassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%^&*()';
+    final generated = List.generate(12, (index) => chars[(DateTime.now().microsecondsSinceEpoch + index) % chars.length]).join();
+    setState(() {
+      _passwordController.text = generated;
+    });
   }
-  @override
-  void dispose() {
-    _controller.dispose(); // always dispose
-    super.dispose();
+
+  void _savePassword() async {
+    if (_nameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Name and Password are required')));
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final passwordProvider = Provider.of<PasswordProvider>(context, listen: false);
+
+    final newPassword = Password(
+      id: '', // Backend will assign ID
+      name: _nameController.text,
+      description: _descController.text,
+      password: _passwordController.text,
+      url: _urlController.text,
+      username: _usernameController.text,
+    );
+
+    final success = await passwordProvider.addPassword(authProvider.token!, newPassword);
+
+    if (success) {
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save password')));
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: NavBar(),
-      drawer: CustomDrawer(currentPage: "make password"),
-      body: Container(
-        child: Padding(padding: .all(16),
-            child: Column(
-        children: [
-          TextField(
-            decoration: InputDecoration(label: Text("Password name"), border: OutlineInputBorder()),
-          ),
-          SizedBox(height: 20,),
-          TextField(decoration: InputDecoration(border: OutlineInputBorder(),labelText: "Description of the password"),),
-          SizedBox(height: 20,),
-          TextField(decoration: InputDecoration(border: OutlineInputBorder(),labelText: "Url of the site"),),
-          SizedBox(height: 20,),
-          TextField(decoration: InputDecoration(border: OutlineInputBorder(), labelText: "Username"),),
-          SizedBox(height: 20,),
-          TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Password',
-              suffixIcon: IconButton(
-                icon: Icon(Icons.refresh),
-                onPressed: () {
-                  setState(() {
-                    password = "Auto generated password";
-                    _controller.text = password;
-                  });
-                },
+      appBar: AppBar(
+        title: Text('Add New Password'),
+        actions: [
+          IconButton(icon: Icon(Icons.check), onPressed: _savePassword),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Account Name",
+                hintText: "e.g. Google, Bank, Netflix",
+                prefixIcon: Icon(Icons.label_outline),
               ),
             ),
-          ),
-        ],),),
+            SizedBox(height: 20),
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: "Username/Email",
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: Icon(Icons.password_outlined),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.refresh),
+                  onPressed: _generatePassword,
+                  tooltip: 'Generate Password',
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _urlController,
+              decoration: InputDecoration(
+                labelText: "Website URL",
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _descController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: "Description",
+                prefixIcon: Icon(Icons.description_outlined),
+              ),
+            ),
+            SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: _savePassword,
+              icon: Icon(Icons.save),
+              label: Text('Save Password'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50),
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
